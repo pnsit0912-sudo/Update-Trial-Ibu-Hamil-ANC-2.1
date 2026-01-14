@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart ANC - Puskesmas Pasar Minggu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* ATURAN KHUSUS PENCETAKAN TINGKAT LANJUT */
+        @media print {
+            /* 1. Sembunyikan semua elemen UI aplikasi secara total */
+            .no-print, header, aside, nav, button, .notification-area, 
+            #root > main > header, .sidebar, .header-container,
+            [class*="fixed"], [class*="sticky"] { 
+                display: none !important; 
+            }
+            
+            /* 2. Reset Global: Matikan bayangan dan paksa akurasi warna */
+            * {
+                box-shadow: none !important;
+                text-shadow: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* 3. PAKSA LATAR BELAKANG PUTIH PADA SELURUH LAYAR */
+            html, body {
+                background-color: #ffffff !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: 100% !important;
+                width: 100% !important;
+                overflow: visible !important;
+                filter: none !important;
+            }
+
+            /* Pastikan kontainer utama root tidak membawa warna background dari App.tsx */
+            #root, #root > main, #root > div {
+                background-color: #ffffff !important;
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: block !important;
+            }
+
+            /* 4. Container Utama Print */
+            .print-only { 
+                display: flex !important; 
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+                min-height: 100vh !important;
+                padding-top: 10mm !important;
+                padding-bottom: 10mm !important;
+                background-color: #ffffff !important; /* Paksa putih lagi */
+                visibility: visible !important;
+            }
+
+            /* 5. Styling Kartu agar Kontras Tinggi */
+            .card-to-print {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-bottom: 40px !important;
+                display: block !important;
+                background-color: #ffffff !important;
+                border: 2.5pt solid #000000 !important; /* Border hitam solid tebal */
+                box-shadow: none !important;
+                position: relative !important;
+            }
+
+            /* Garis pembatas teks header dokumen */
+            .border-b-2.border-black {
+                border-bottom: 2pt solid #000000 !important;
+            }
+            
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+        
+        /* Tampilan di layar browser (Layar tetap Gray-50 agar mata tidak lelah) */
+        .print-only { display: none; }
+        #map-container { height: 500px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+        html { scroll-behavior: smooth; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "leaflet": "https://esm.sh/leaflet@^1.9.4",
+    "react-qr-code": "https://esm.sh/react-qr-code@^2.0.18"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
