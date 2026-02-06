@@ -8,7 +8,7 @@ import {
   UserPlus, Edit3, X, Clock, Baby, Trash2, ShieldCheck, LayoutDashboard, Activity, 
   MapPin, ShieldAlert, QrCode, BookOpen, Map as MapIcon, Phone, Navigation as NavIcon, Crosshair,
   RefreshCw, Stethoscope, Heart, Droplets, Thermometer, ClipboardCheck, ArrowRight, ExternalLink,
-  Info, Bell, Eye, Star, TrendingUp, CheckSquare, Zap, Shield, List, Sparkles, BrainCircuit, Waves, Utensils, Download, Upload, Database, UserX, Save, PartyPopper, RefreshCcw, Scale, Ruler, CalendarDays, Siren, FileText, Loader2, Calculator
+  Info, Bell, Eye, Star, TrendingUp, CheckSquare, Zap, Shield, List, Sparkles, BrainCircuit, Waves, Utensils, Download, Upload, Database, UserX, Save, PartyPopper, RefreshCcw, Scale, Ruler, CalendarDays, Siren, FileText, Loader2, Calculator, MessageSquare
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -21,7 +21,6 @@ import { RiskMonitoring } from './RiskMonitoring';
 import { SmartCardModule, EducationModule, ContactModule, BroadcastModule } from './FeatureModules';
 import { MapView } from './MapView';
 import { PatientProfileView } from './PatientProfileView';
-import { VisualizationView } from './VisualizationView';
 
 const DATABASE_VERSION = '5.0.0 (Online PostgreSQL)';
 
@@ -795,7 +794,6 @@ export default function App() {
           {notification && <div className="fixed top-6 md:top-10 left-1/2 -translate-x-1/2 z-[999] px-6 md:px-10 py-4 md:py-6 bg-slate-900 text-white rounded-[2rem] shadow-2xl flex items-center gap-4 animate-in slide-in-from-top-10"><CheckCircle size={20} className="text-emerald-400" /><p className="text-xs font-black uppercase tracking-widest">{notification.message}</p></div>}
           
           {view === 'dashboard' && <DashboardHome />}
-          {view === 'visualization' && <VisualizationView />}
           {view === 'broadcast' && <BroadcastModule state={state} />}
           
           {view === 'patients' && currentUser.role !== UserRole.USER && (
