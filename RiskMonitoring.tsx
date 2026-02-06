@@ -105,14 +105,14 @@ export const RiskMonitoring: React.FC<RiskMonitoringProps> = ({ state, onViewPro
     return { kecStats, kelStats };
   }, [riskAnalysis]);
 
-  // List untuk tampilan UI: Menyembunyikan yang sudah bersalin
+  // FILTER PENTING: Sembunyikan pasien isDelivered dari tampilan Monitoring Risiko
   const filteredRiskListUI = useMemo(() => {
     return riskAnalysis.filter(p => 
       (filterKelurahan === 'ALL' || p.kelurahan === filterKelurahan) && !p.isDelivered
     ).sort((a, b) => (a.priority || 0) - (b.priority || 0));
   }, [riskAnalysis, filterKelurahan]);
 
-  // List untuk ekspor CSV: Termasuk yang sudah bersalin
+  // List untuk ekspor CSV: Termasuk yang sudah bersalin (untuk laporan lengkap)
   const filteredRiskListExport = useMemo(() => {
     return riskAnalysis.filter(p => 
       (filterKelurahan === 'ALL' || p.kelurahan === filterKelurahan)
@@ -250,12 +250,13 @@ export const RiskMonitoring: React.FC<RiskMonitoringProps> = ({ state, onViewPro
         <div className="h-px flex-1 bg-gray-100" />
       </div>
 
+      {/* STATISTIK KOTAK DI ATAS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Kritis (Hitam)', count: riskAnalysis.filter(p => p.riskLevel === 'HITAM').length, color: 'bg-slate-950', text: 'text-white' },
-          { label: 'Tinggi (Merah)', count: riskAnalysis.filter(p => p.riskLevel === 'MERAH').length, color: 'bg-red-600', text: 'text-white' },
-          { label: 'Sedang (Kuning)', count: riskAnalysis.filter(p => p.riskLevel === 'KUNING').length, color: 'bg-yellow-400', text: 'text-yellow-950' },
-          { label: 'Stabil (Hijau)', count: riskAnalysis.filter(p => p.riskLevel === 'HIJAU').length, color: 'bg-emerald-500', text: 'text-white' },
+          { label: 'Kritis (Hitam)', count: riskAnalysis.filter(p => p.riskLevel === 'HITAM' && !p.isDelivered).length, color: 'bg-slate-950', text: 'text-white' },
+          { label: 'Tinggi (Merah)', count: riskAnalysis.filter(p => p.riskLevel === 'MERAH' && !p.isDelivered).length, color: 'bg-red-600', text: 'text-white' },
+          { label: 'Sedang (Kuning)', count: riskAnalysis.filter(p => p.riskLevel === 'KUNING' && !p.isDelivered).length, color: 'bg-yellow-400', text: 'text-yellow-950' },
+          { label: 'Stabil (Hijau)', count: riskAnalysis.filter(p => p.riskLevel === 'HIJAU' && !p.isDelivered).length, color: 'bg-emerald-500', text: 'text-white' },
         ].map((item, i) => (
           <div key={i} className={`${item.color} ${item.text} p-8 rounded-[2.5rem] shadow-xl border border-white/10 group hover:scale-105 transition-all`}>
             <p className="text-[10px] font-black uppercase opacity-60 tracking-widest">{item.label}</p>

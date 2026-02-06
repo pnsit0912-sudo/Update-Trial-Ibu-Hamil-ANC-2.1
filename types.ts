@@ -30,12 +30,23 @@ export interface User {
   username?: string;
   password?: string;
   name: string;
+  // --- DATA MEDIS STANDAR ANC ---
+  nik?: string; // Nomor Induk Kependudukan
+  husbandName?: string; // Nama Suami/Penanggung Jawab
+  bpjsNumber?: string; // Nomor JKN/KIS
+  
+  // Antropometri & Gizi (Screening Awal)
+  height?: number; // Tinggi Badan (cm) - Deteksi Panggul Sempit (<145)
+  prePregnancyWeight?: number; // BB Pra-Hamil (kg)
+  lila?: number; // Lingkar Lengan Atas (cm) - Deteksi KEK (<23.5)
+  
   dob: string;
   address: string;
   kecamatan: string;
   kelurahan: string;
   lat?: number;
   lng?: number;
+  
   hpht: string;
   pregnancyMonth: number; 
   pregnancyNumber: number; // Gravida (G)
