@@ -10,7 +10,8 @@
     "lucide-react": "^0.562.0",
     "react-qr-code": "^2.0.18",
     "leaflet": "^1.9.4",
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "@google/genai": "^0.2.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
