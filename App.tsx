@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { UserRole, User, AppState, ANCVisit, SystemLog, SystemAlert, DeliveryData } from './types';
 import { PUSKESMAS_INFO, WILAYAH_DATA, NAVIGATION, MOCK_USERS, MOCK_ANC_VISITS } from './constants';
@@ -180,13 +179,51 @@ export default function App() {
     currentView: 'dashboard'
   });
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [view, setView] = useState('dashboard');
+  // --- STATE INITIALIZATION WITH LOCAL STORAGE PERSISTENCE ---
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('smart_anc_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [view, setView] = useState<string>(() => {
+    return localStorage.getItem('smart_anc_view') || 'dashboard';
+  });
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [patientSearch, setPatientSearch] = useState('');
 
   // Local state for interactive dashboard (checkboxes)
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<string[]>(() => {
+    try {
+      const savedTasks = localStorage.getItem('smart_anc_tasks');
+      return savedTasks ? JSON.parse(savedTasks) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // --- PERSISTENCE EFFECTS ---
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('smart_anc_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('smart_anc_user');
+      localStorage.removeItem('smart_anc_view'); // Clear view on logout to reset to default
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem('smart_anc_view', view);
+  }, [view]);
+
+  useEffect(() => {
+    localStorage.setItem('smart_anc_tasks', JSON.stringify(completedTasks));
+  }, [completedTasks]);
+
 
   // --- SUPABASE DATA FETCHING ---
   const fetchData = async () => {
@@ -524,7 +561,7 @@ export default function App() {
     );
   }
 
-  if (!currentUser) return <LoginScreen users={state.users} onLogin={(u) => setCurrentUser(u)} />;
+  if (!currentUser) return <LoginScreen users={state.users} onLogin={(u) => { setCurrentUser(u); setView('dashboard'); }} />;
 
   // --- DASHBOARD COMPONENTS ---
 
