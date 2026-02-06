@@ -8,7 +8,8 @@ import {
   UserPlus, Edit3, X, Clock, Baby, Trash2, ShieldCheck, LayoutDashboard, Activity, 
   MapPin, ShieldAlert, QrCode, BookOpen, Map as MapIcon, Phone, Navigation as NavIcon, Crosshair,
   RefreshCw, Stethoscope, Heart, Droplets, Thermometer, ClipboardCheck, ArrowRight, ExternalLink,
-  Info, Bell, Eye, Star, TrendingUp, CheckSquare, Zap, Shield, List, Sparkles, BrainCircuit, Waves, Utensils, Download, Upload, Database, UserX, Save, PartyPopper, RefreshCcw, Scale, Ruler, CalendarDays, Siren, FileText, Loader2, Calculator, MessageSquare
+  Info, Bell, Eye, Star, TrendingUp, CheckSquare, Zap, Shield, List, Sparkles, BrainCircuit, Waves, Utensils, Download, Upload, Database, UserX, Save, PartyPopper, RefreshCcw, Scale, Ruler, CalendarDays, Siren, FileText, Loader2, Calculator, MessageSquare,
+  Trophy, Dumbbell, Medal, Timer, Smile, CalendarX, ClipboardList, ChevronRight
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -25,9 +26,10 @@ import { PatientProfileView } from './PatientProfileView';
 const DATABASE_VERSION = '5.0.0 (Online PostgreSQL)';
 
 const DAILY_TASKS = [
-  { task: 'Minum Tablet Tambah Darah', time: 'Malam Hari', icon: <Droplets size={16} /> },
-  { task: 'Hitung 10 Gerakan Janin', time: 'Setiap Hari', icon: <Activity size={16} /> },
-  { task: 'Konsumsi Protein Tinggi', time: 'Sarapan/Maksi', icon: <Utensils size={16} /> }
+  { id: 'vit', task: 'Minum Tablet Tambah Darah', time: 'Malam Hari', icon: <Droplets size={18} /> },
+  { id: 'move', task: 'Hitung 10 Gerakan Janin', time: 'Setiap Hari', icon: <Activity size={18} /> },
+  { id: 'food', task: 'Makan Protein (Telur/Ikan)', time: 'Siang Hari', icon: <Utensils size={18} /> },
+  { id: 'sport', task: 'Senam Hamil Ringan (15 mnt)', time: 'Pagi Hari', icon: <Dumbbell size={18} /> }
 ];
 
 const getTrimesterAdvice = (weeks: number) => {
@@ -182,6 +184,9 @@ export default function App() {
   const [view, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [patientSearch, setPatientSearch] = useState('');
+
+  // Local state for interactive dashboard (checkboxes)
+  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
   // --- SUPABASE DATA FETCHING ---
   const fetchData = async () => {
@@ -521,28 +526,351 @@ export default function App() {
 
   if (!currentUser) return <LoginScreen users={state.users} onLogin={(u) => setCurrentUser(u)} />;
 
-  const DashboardHome = () => {
+  // --- DASHBOARD COMPONENTS ---
+
+  const AdminNakesDashboard = () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Logic Kalkulasi Data
+    const activePatients = state.users.filter(u => u.role === UserRole.USER && !u.isDelivered);
+    const highRiskPatients = activePatients.filter(u => u.totalRiskScore >= 12 || (u.selectedRiskFactors && u.selectedRiskFactors.some(rf => ['AGDO_BLEEDING', 'AGDO_ECLAMPSIA'].includes(rf))));
+    
+    // Logic Pasien Mangkir (Missed Visits)
+    const missedPatients = activePatients.filter(u => {
+       const pVisits = state.ancVisits.filter(v => v.patientId === u.id).sort((a,b) => b.visitDate.localeCompare(a.visitDate));
+       const latest = pVisits[0];
+       return latest && latest.nextVisitDate < today;
+    });
+
+    // Logic Jadwal Hari Ini & Besok
+    const upcomingVisits = activePatients.filter(u => {
+       const pVisits = state.ancVisits.filter(v => v.patientId === u.id).sort((a,b) => b.visitDate.localeCompare(a.visitDate));
+       const latest = pVisits[0];
+       return latest && latest.nextVisitDate >= today; // Tampilkan semua yang dijadwalkan hari ini atau ke depan
+    }).sort((a,b) => {
+       const visitA = state.ancVisits.find(v => v.patientId === a.id)?.nextVisitDate || '';
+       const visitB = state.ancVisits.find(v => v.patientId === b.id)?.nextVisitDate || '';
+       return visitA.localeCompare(visitB);
+    }).slice(0, 5);
+
     return (
-      <div className="space-y-8 animate-in fade-in duration-700">
-         <div className="bg-gradient-to-r from-emerald-800 to-slate-900 p-10 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
+      <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+         {/* HEADER COMMAND CENTER */}
+         <div className="bg-slate-900 p-10 rounded-[3rem] text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="relative z-10">
-                <h2 className="text-3xl font-black uppercase tracking-tighter">Selamat Datang, {currentUser.name}</h2>
-                <p className="text-emerald-200 mt-2 text-sm uppercase tracking-widest">Sistem Smart ANC Terintegrasi (Online)</p>
-                <div className="flex gap-4 mt-8">
-                <div className="px-6 py-3 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
-                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-wider">Total Pasien</p>
-                    <p className="text-3xl font-black">{state.users.filter(u => u.role === UserRole.USER).length}</p>
+                <div className="flex items-center gap-3 mb-2">
+                   <div className="p-2 bg-emerald-500 rounded-lg animate-pulse"></div>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Live Monitoring System</p>
                 </div>
-                <div className="px-6 py-3 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
-                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-wider">Total Kunjungan</p>
-                    <p className="text-3xl font-black">{state.ancVisits.length}</p>
-                </div>
-                </div>
+                <h2 className="text-3xl font-black uppercase tracking-tighter">Pusat Pemantauan Klinis</h2>
+                <p className="text-slate-400 mt-2 text-sm font-bold">Halo, {currentUser?.name}. Berikut adalah status kesehatan ibu hamil terkini.</p>
             </div>
-            <Activity size={300} className="absolute -right-20 -bottom-32 text-white opacity-5 rotate-12" />
+            
+            <div className="relative z-10 flex gap-4">
+               <button onClick={() => handleNavigate('patients')} className="px-6 py-4 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 backdrop-blur-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">
+                  <UserPlus size={16}/> Registrasi Pasien
+               </button>
+               <button onClick={() => handleNavigate('map')} className="px-6 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">
+                  <MapIcon size={16}/> Peta Sebaran
+               </button>
+            </div>
+            <Stethoscope size={300} className="absolute -right-20 -bottom-32 text-white opacity-5 rotate-12" />
+         </div>
+
+         {/* RINGKASAN STATUS KLINIS */}
+         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:border-indigo-100 transition-all">
+               <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all"><Users size={20}/></div>
+                  <span className="text-[10px] font-black uppercase bg-slate-50 px-2 py-1 rounded text-slate-400">Total</span>
+               </div>
+               <p className="text-3xl font-black text-slate-900">{activePatients.length}</p>
+               <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Ibu Hamil Aktif</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:border-red-100 transition-all">
+               <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-red-50 text-red-600 rounded-2xl group-hover:bg-red-600 group-hover:text-white transition-all"><ShieldAlert size={20}/></div>
+                  <span className="text-[10px] font-black uppercase bg-slate-50 px-2 py-1 rounded text-slate-400">Prioritas</span>
+               </div>
+               <p className="text-3xl font-black text-slate-900">{highRiskPatients.length}</p>
+               <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Risiko Tinggi (KRST)</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:border-yellow-100 transition-all">
+               <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-yellow-50 text-yellow-600 rounded-2xl group-hover:bg-yellow-500 group-hover:text-white transition-all"><CalendarX size={20}/></div>
+                  <span className="text-[10px] font-black uppercase bg-slate-50 px-2 py-1 rounded text-slate-400">Action</span>
+               </div>
+               <p className="text-3xl font-black text-slate-900">{missedPatients.length}</p>
+               <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Lewat Jadwal Kontrol</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:border-emerald-100 transition-all">
+               <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-all"><Baby size={20}/></div>
+                  <span className="text-[10px] font-black uppercase bg-slate-50 px-2 py-1 rounded text-slate-400">Arsip</span>
+               </div>
+               <p className="text-3xl font-black text-slate-900">{state.users.filter(u => u.isDelivered).length}</p>
+               <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Sudah Bersalin</p>
+            </div>
+         </div>
+
+         {/* SPLIT VIEW: PRIORITAS & JADWAL */}
+         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            
+            {/* PANEL KIRI: PRIORITAS PENANGANAN (KRST) */}
+            <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col h-full">
+               <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
+                     <AlertCircle className="text-red-500" size={24} /> Watchlist Risiko Tinggi
+                  </h3>
+                  <button onClick={() => handleNavigate('monitoring')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1">
+                     Lihat Semua <ChevronRight size={12}/>
+                  </button>
+               </div>
+
+               <div className="space-y-4 flex-1 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  {highRiskPatients.length === 0 ? (
+                     <div className="text-center py-10 opacity-50">
+                        <ShieldCheck size={48} className="mx-auto text-emerald-500 mb-4"/>
+                        <p className="text-xs font-bold uppercase">Tidak ada pasien risiko tinggi aktif</p>
+                     </div>
+                  ) : (
+                     highRiskPatients.slice(0, 5).map(p => (
+                        <div key={p.id} className="p-5 rounded-[2rem] bg-red-50 border border-red-100 flex items-center justify-between group hover:shadow-md transition-all">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-white text-red-600 font-black flex items-center justify-center border border-red-100 shadow-sm">
+                                 {p.name.charAt(0)}
+                              </div>
+                              <div>
+                                 <p className="text-sm font-black text-slate-900 uppercase">{p.name}</p>
+                                 <p className="text-[10px] font-bold text-red-500 uppercase mt-0.5">
+                                    Skor: {p.totalRiskScore + 2} • {p.kelurahan}
+                                 </p>
+                              </div>
+                           </div>
+                           <button onClick={() => setViewingPatientProfile(p.id)} className="p-3 bg-white text-slate-400 hover:text-indigo-600 rounded-xl transition-all shadow-sm">
+                              <ClipboardList size={18} />
+                           </button>
+                        </div>
+                     ))
+                  )}
+               </div>
+            </div>
+
+            {/* PANEL KANAN: JADWAL KUNJUNGAN & MANGKIR */}
+            <div className="space-y-8">
+               {/* MANGKIR ALERT */}
+               {missedPatients.length > 0 && (
+                  <div className="bg-amber-50 p-8 rounded-[3rem] border border-amber-100 relative overflow-hidden">
+                     <div className="relative z-10">
+                        <h3 className="text-lg font-black text-amber-800 uppercase tracking-tighter flex items-center gap-3 mb-4">
+                           <CalendarX size={24} /> {missedPatients.length} Pasien Mangkir
+                        </h3>
+                        <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                           {missedPatients.map(p => (
+                              <div key={p.id} className="flex justify-between items-center bg-white/60 p-3 rounded-xl">
+                                 <span className="text-xs font-bold text-amber-900 uppercase">{p.name}</span>
+                                 <button onClick={() => window.open(`https://wa.me/${p.phone.replace(/\D/g,'').replace(/^0/,'62')}`, '_blank')} className="text-[9px] font-black bg-amber-500 text-white px-3 py-1 rounded-lg uppercase hover:bg-amber-600">
+                                    Hubungi
+                                 </button>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                     <AlertTriangle size={150} className="absolute -right-10 -bottom-10 text-amber-200 opacity-50 rotate-12 pointer-events-none"/>
+                  </div>
+               )}
+
+               {/* AGENDA KUNJUNGAN */}
+               <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex-1">
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3 mb-6">
+                     <Calendar size={24} className="text-indigo-600" /> Agenda Kunjungan
+                  </h3>
+                  <div className="space-y-4">
+                     {upcomingVisits.length === 0 ? (
+                        <p className="text-xs text-slate-400 font-bold uppercase text-center py-4">Belum ada jadwal kunjungan dekat</p>
+                     ) : (
+                        upcomingVisits.map(p => {
+                           const visitDate = state.ancVisits.find(v => v.patientId === p.id)?.nextVisitDate;
+                           const isToday = visitDate === today;
+                           return (
+                              <div key={p.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                                 <div className={`w-2 h-12 rounded-full ${isToday ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                                 <div className="flex-1">
+                                    <p className="text-xs font-black text-slate-900 uppercase">{p.name}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
+                                       Jadwal: {visitDate === today ? 'HARI INI' : new Date(visitDate!).toLocaleDateString('id-ID')}
+                                    </p>
+                                 </div>
+                                 {isToday && <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[8px] font-black uppercase">Hari Ini</span>}
+                              </div>
+                           );
+                        })
+                     )}
+                  </div>
+               </div>
+            </div>
          </div>
       </div>
     );
+  };
+
+  const PatientDashboard = () => {
+    const pregnancy = calculatePregnancyProgress(currentUser?.hpht || '');
+    const babySize = pregnancy ? getBabySizeByWeek(pregnancy.weeks) : { name: 'Belum Terdeteksi', icon: '❓' };
+    
+    // Achievement System Logic
+    const level = pregnancy ? (pregnancy.weeks < 13 ? 1 : pregnancy.weeks < 27 ? 2 : 3) : 1;
+    const levelName = ['Bunda Pemula', 'Bunda Pejuang', 'Super Mom'][level - 1];
+    
+    // Task handling
+    const toggleTask = (taskId: string) => {
+      if (completedTasks.includes(taskId)) {
+        setCompletedTasks(completedTasks.filter(t => t !== taskId));
+      } else {
+        setCompletedTasks([...completedTasks, taskId]);
+        showNotification("Tugas Selesai! Pertahankan semangat Bunda!");
+      }
+    };
+
+    return (
+      <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+         {/* HERO HEADER */}
+         <div className="bg-gradient-to-br from-emerald-500 to-teal-700 p-10 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
+            <div className="relative z-10">
+               <div className="flex items-center gap-3 mb-4">
+                  <span className="px-4 py-1.5 bg-white/20 backdrop-blur rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">
+                     Level {level}: {levelName}
+                  </span>
+               </div>
+               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-2">Halo, {currentUser?.name.split(' ')[0]}</h2>
+               <p className="text-emerald-100 font-bold text-sm opacity-90">Semoga Bunda dan si Kecil sehat selalu hari ini.</p>
+            </div>
+            <Sparkles size={200} className="absolute -right-10 -bottom-20 text-white opacity-10 animate-pulse" />
+         </div>
+
+         {/* MAIN INTERACTIVE GRID */}
+         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            
+            {/* MODULE 1: FETAL DEVELOPMENT */}
+            <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-xl transition-all">
+               <div className="flex justify-between items-start relative z-10">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter flex items-center gap-2">
+                       <Baby size={24} className="text-emerald-500"/> Perkembangan Janin
+                    </h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Minggu ke-{pregnancy?.weeks || 0}</p>
+                  </div>
+               </div>
+               
+               <div className="mt-8 flex items-center gap-8 relative z-10">
+                  <div className="w-24 h-24 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-6xl shadow-inner animate-bounce">
+                     {babySize.icon}
+                  </div>
+                  <div>
+                     <p className="text-sm font-bold text-slate-400 uppercase">Ukuran Sebesar</p>
+                     <p className="text-2xl md:text-3xl font-black text-slate-800 uppercase leading-none mt-1">{babySize.name}</p>
+                  </div>
+               </div>
+               
+               <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-600 leading-relaxed font-medium">
+                  "{getTrimesterAdvice(pregnancy?.weeks || 0)}"
+               </div>
+            </div>
+
+            {/* MODULE 2: HPL COUNTDOWN */}
+            <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
+               <div className="relative z-10">
+                  <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2 mb-6">
+                     <Timer size={24} className="text-emerald-400"/> Menuju HPL
+                  </h3>
+                  
+                  <div className="flex items-end gap-2 mb-2">
+                     <span className="text-5xl md:text-6xl font-black tracking-tighter">{pregnancy?.hpl ? Math.max(0, 280 - (pregnancy?.totalDays || 0)) : '-'}</span>
+                     <span className="text-lg font-bold text-slate-400 mb-2">Hari Lagi</span>
+                  </div>
+                  <p className="text-sm font-bold text-emerald-400 uppercase tracking-widest">Estimasi: {pregnancy?.hpl || 'Belum ada data'}</p>
+                  
+                  {/* Progress Bar */}
+                  <div className="mt-8">
+                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                        <span>Mulai</span>
+                        <span>{pregnancy?.percentage || 0}%</span>
+                        <span>Lahir</span>
+                     </div>
+                     <div className="h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-1000" style={{ width: `${pregnancy?.percentage || 0}%` }}></div>
+                     </div>
+                  </div>
+               </div>
+               <CalendarDays size={200} className="absolute -right-20 -top-20 text-white opacity-5 rotate-12" />
+            </div>
+
+            {/* MODULE 3: DAILY EXERCISE */}
+            <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 xl:col-span-2">
+               <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter flex items-center gap-2">
+                     <Dumbbell size={24} className="text-indigo-500"/> Misi Harian Bunda
+                  </h3>
+                  <div className="bg-indigo-50 px-4 py-2 rounded-xl text-indigo-600 text-[10px] font-black uppercase tracking-widest">
+                     {completedTasks.length}/{DAILY_TASKS.length} Selesai
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {DAILY_TASKS.map(task => {
+                     const isDone = completedTasks.includes(task.id);
+                     return (
+                        <div 
+                           key={task.id}
+                           onClick={() => toggleTask(task.id)}
+                           className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all active:scale-95 ${
+                              isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-white border-slate-100 hover:border-indigo-100 hover:shadow-lg'
+                           }`}
+                        >
+                           <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${isDone ? 'bg-white/20' : 'bg-slate-50 text-slate-400'}`}>
+                              {isDone ? <CheckCircle size={20} /> : task.icon}
+                           </div>
+                           <p className={`text-xs font-black uppercase tracking-widest mb-1 ${isDone ? 'text-emerald-100' : 'text-slate-400'}`}>{task.time}</p>
+                           <p className={`font-bold leading-tight ${isDone ? 'text-white' : 'text-slate-700'}`}>{task.task}</p>
+                        </div>
+                     );
+                  })}
+               </div>
+            </div>
+
+            {/* MODULE 4: ACHIEVEMENTS */}
+            <div className="bg-indigo-50 p-8 rounded-[3rem] border border-indigo-100 xl:col-span-2 flex flex-col md:flex-row items-center justify-between gap-8">
+               <div className="flex items-center gap-6">
+                  <div className="bg-white p-4 rounded-[2rem] text-yellow-500 shadow-xl shadow-indigo-100">
+                     <Trophy size={40} />
+                  </div>
+                  <div>
+                     <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Pencapaian Bunda</h3>
+                     <p className="text-xs font-bold text-slate-500 mt-1">Terus jaga kesehatan untuk membuka lencana baru!</p>
+                  </div>
+               </div>
+               
+               <div className="flex gap-4">
+                  {[1, 2, 3].map(lvl => (
+                     <div key={lvl} className={`flex flex-col items-center gap-2 ${lvl <= level ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm border-2 border-white ${lvl <= level ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-slate-200'}`}>
+                           <Medal size={28} />
+                        </div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Tri {lvl}</p>
+                     </div>
+                  ))}
+               </div>
+            </div>
+         </div>
+      </div>
+    );
+  };
+
+  const DashboardHome = () => {
+    return currentUser?.role === UserRole.USER ? <PatientDashboard /> : <AdminNakesDashboard />;
   };
 
   const renderRegistrationForm = () => {
